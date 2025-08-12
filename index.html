@@ -3,31 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Data Portal</title>
+  <title>Order Data Portal</title>
   <style>
     :root{--bg:#0b1020;--card:#121a2e;--text:#e8ecf3;--muted:#9aa4b2;--accent:#6ea8fe;--accent-2:#7dd3fc;}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#121528 50%,#0b1020);color:var(--text)}
-    .container{max-width:1100px;margin:auto;padding:32px 16px}
-    .card{background:linear-gradient(180deg,var(--card),#0f172a);border:1px solid #1f2a44;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:18px}
-    h1{font-size:28px;margin:0 0 8px 0;letter-spacing:.3px}
-    .muted{color:var(--muted);font-size:14px;margin:0 0 16px}
-    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:10px 0 14px}
-    input[type="text"]{flex:1;min-width:240px;background:#0b1327;color:var(--text);border:1px solid #223052;border-radius:10px;padding:10px 12px;outline:none}
-    input::placeholder{color:#7c8697}
+    .container{max-width:1200px;margin:auto;padding:28px 16px}
+    .card{background:linear-gradient(180deg,var(--card),#0f172a);border:1px solid #1f2a44;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:20px}
+    h1{font-size:28px;margin:0 0 8px 0;letter-spacing:.2px}
+    .muted{color:var(--muted);font-size:14px;margin:0 0 14px}
+    .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;margin:10px 0 14px}
+    .controls .span-2{grid-column:span 2}
+    input[type="text"], input[type="number"], select{width:100%;background:#0b1327;color:var(--text);border:1px solid #223052;border-radius:10px;padding:10px 12px;outline:none}
+    label{font-size:12px;color:#9fb0c7;margin-bottom:6px;display:block}
     .pill{font-size:13px;color:#c9d3e6;background:#0c1a36;border:1px solid #1e2d52;border-radius:999px;padding:8px 10px;display:inline-flex;gap:8px;align-items:center}
-    .pill b{color:var(--accent)}
-    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px}
     thead th{position:sticky;top:0;background:#0e1730;border-bottom:1px solid #223052;padding:10px;font-size:13px;text-align:left}
     tbody td{padding:10px;border-bottom:1px solid #1c2744;font-size:14px;vertical-align:top}
     tr:hover td{background:#0b142e}
-    th.sortable{cursor:pointer}
+    th.sortable{cursor:pointer;user-select:none}
     th.sortable .arrow{opacity:.5;margin-left:6px}
     th.sortable[data-order="asc"] .arrow{opacity:1;transform:rotate(180deg)}
     .tag{background:#102552;border:1px solid #2b3f6e;color:#cfe4ff;padding:2px 8px;border-radius:999px;font-size:12px}
     .footer{margin-top:12px;color:#93a0b5;font-size:12px}
-    .hidden{display:none}
+    .pagination{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .btn{background:#122244;border:1px solid #2a3b66;border-radius:10px;color:#dce9ff;padding:8px 12px;cursor:pointer}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .pagesize{margin-left:auto}
     a{color:var(--accent-2)}
+    .nowrap{white-space:nowrap}
+    @media (max-width:900px){
+      .controls{grid-template-columns:1fr 1fr}
+      .pagesize{margin-left:0}
+    }
     @media (max-width:720px){
       thead{display:none}
       table,tbody,tr,td{display:block;width:100%}
@@ -40,24 +50,68 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>Data Portal</h1>
-      <p class="muted">Upload a fresh <code>data.csv</code> to update. Click column headers to sort. Use search to filter.</p>
+      <h1>Order Data Portal</h1>
+      <p class="muted">Upload or replace <code>data.csv</code> in the repository to update. Search, filter, sort, and paginate below.</p>
+
       <div class="controls">
-        <input id="search" type="text" placeholder="Search rows… (matches any column)" />
-        <span class="pill"><span id="rowCount">0</span> rows • <b id="colCount">0</b> columns</span>
+        <div>
+          <label>Global Search</label>
+          <input id="search" type="text" placeholder="Find anything across all columns…" />
+        </div>
+        <div>
+          <label>Filter — Item Name</label>
+          <input id="filterItem" type="text" placeholder="e.g., UltraWidget" />
+        </div>
+        <div>
+          <label>Filter — Part Number</label>
+          <input id="filterPart" type="text" placeholder="e.g., UW-3000" />
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Quantity Min</label>
+            <input id="qtyMin" type="number" placeholder="0"/>
+          </div>
+          <div style="flex:1">
+            <label>Quantity Max</label>
+            <input id="qtyMax" type="number" placeholder="1000"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <span class="pill"><span id="rowCount">0</span> rows</span>
+        <span class="pill"><span id="colCount">0</span> columns</span>
         <a class="pill" href="data.csv" download>Download CSV</a>
       </div>
+
       <div class="table-wrap">
         <table id="table">
           <thead></thead>
           <tbody></tbody>
         </table>
       </div>
+
+      <div class="pagination">
+        <button id="prev" class="btn">◀ Prev</button>
+        <span class="pill nowrap">Page <span id="pageNo">1</span>/<span id="pageTotal">1</span></span>
+        <button id="next" class="btn">Next ▶</button>
+        <div class="pagesize">
+          <label for="pageSize" class="muted">Rows per page</label>
+          <select id="pageSize">
+            <option>10</option>
+            <option selected>25</option>
+            <option>50</option>
+            <option>100</option>
+          </select>
+        </div>
+      </div>
+
       <div class="footer">
-        Powered by GitHub Pages • This site is static and reads <code>data.csv</code> directly.
+        Powered by GitHub Pages • Static site reads <code>data.csv</code> (first row must be headers). Click a header to sort. URLs are clickable.
       </div>
     </div>
   </div>
+
 <script>
 // --- Minimal CSV parser (handles quotes & commas) ---
 function parseCSV(text){
@@ -65,17 +119,15 @@ function parseCSV(text){
   for(let i=0;i<text.length;i++){
     const c=text[i], n=text[i+1];
     if(inQ){
-      if(c==='"'&&n==='"'){val+='"';i++;continue;}
-      if(c==='"'){inQ=false;continue;}
+      if(c==='\"'&&n==='\"'){val+='\"';i++;continue;}
+      if(c==='\"'){inQ=false;continue;}
       val+=c;
     }else{
-      if(c==='"'){inQ=true;continue;}
+      if(c==='\"'){inQ=true;continue;}
       if(c===','){row.push(val);val='';continue;}
-      if(c==='
-'){row.push(val);rows.push(row);row=[];val='';continue;}
-      if(c===''&&n==='
-'){continue;}
-      if(c===''){row.push(val);rows.push(row);row=[];val='';continue;}
+      if(c==='\n'){row.push(val);rows.push(row);row=[];val='';continue;}
+      if(c==='\r'&&n==='\n'){continue;}
+      if(c==='\r'){row.push(val);rows.push(row);row=[];val='';continue;}
       val+=c;
     }
   }
@@ -83,22 +135,30 @@ function parseCSV(text){
   return rows;
 }
 
+let headers=[], allRows=[], filtered=[], sortCol=-1, sortOrder='';
+let page=1, pageSize=25;
+
 async function loadCSV(){
   const res = await fetch('data.csv?cache=' + Date.now());
-  if(!res.ok){document.querySelector('#table').insertAdjacentHTML('afterend','<p class="muted">Could not load data.csv</p>');return;}
+  if(!res.ok){
+    document.querySelector('#table').insertAdjacentHTML('afterend','<p class="muted">Could not load data.csv</p>');
+    return;
+  }
   const text = await res.text();
   const grid = parseCSV(text).filter(r => r.some(v => String(v).trim()!==''));
   if(grid.length===0){return;}
-  const headers = grid[0];
-  const rows = grid.slice(1);
-  buildTable(headers, rows);
+  headers = grid[0];
+  allRows = grid.slice(1);
+  filtered = allRows.slice();
+
+  pageSize = parseInt(document.getElementById('pageSize').value, 10);
+  buildHeader();
+  applyAndRender();
 }
 
-function buildTable(headers, rows){
+function buildHeader(){
   const thead = document.querySelector('#table thead');
-  const tbody = document.querySelector('#table tbody');
-  thead.innerHTML=''; tbody.innerHTML='';
-
+  thead.innerHTML='';
   const tr = document.createElement('tr');
   headers.forEach((h, idx)=>{
     const th=document.createElement('th');
@@ -108,69 +168,131 @@ function buildTable(headers, rows){
     th.dataset.order='';
     const arrow=document.createElement('span');arrow.className='arrow';arrow.textContent='▲';
     th.appendChild(arrow);
-    th.addEventListener('click',()=>sortBy(idx, th));
+    th.addEventListener('click',()=>toggleSort(idx, th));
     tr.appendChild(th);
   });
   thead.appendChild(tr);
-
-  function renderRows(data){
-    tbody.innerHTML='';
-    data.forEach(r=>{
-      const tr=document.createElement('tr');
-      r.forEach((v,i)=>{
-        const td=document.createElement('td');
-        const text = String(v || '');
-        // auto-link URLs
-        if(/^https?:\/\//i.test(text)){
-          const a=document.createElement('a'); a.href=text; a.textContent=text; a.target='_blank'; td.appendChild(a);
-        }else{
-          td.textContent=text;
-        }
-        td.dataset.label=headers[i] || ('Col ' + (i+1));
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-    document.querySelector('#rowCount').textContent = data.length;
-    document.querySelector('#colCount').textContent = headers.length;
-  }
-
-  renderRows(rows);
-
-  // Search
-  const search = document.getElementById('search');
-  let allRows = rows.slice();
-  function doFilter(){
-    const q = search.value.trim().toLowerCase();
-    if(!q){renderRows(allRows);return;}
-    const filtered = allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q)));
-    renderRows(filtered);
-  }
-  search.addEventListener('input', debounce(doFilter, 120));
-
-  // Sorting
-  function sortBy(colIndex, th){
-    const order = th.dataset.order === 'asc' ? 'desc' : 'asc';
-    [...thead.querySelectorAll('th')].forEach(x=>x.dataset.order='');
-    th.dataset.order = order;
-    const sorted = rows.slice().sort((a,b)=>{
-      const av = (a[colIndex]||'').toString();
-      const bv = (b[colIndex]||'').toString();
-      const an = parseFloat(av.replace(/,/g,''));
-      const bn = parseFloat(bv.replace(/,/g,''));
-      const bothNum = !isNaN(an) && !isNaN(bn);
-      if(bothNum){
-        return order==='asc' ? an - bn : bn - an;
-      }else{
-        return order==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-      }
-    });
-    renderRows(sorted);
-  }
-
-  function debounce(fn, ms){let t;return (...args)=>{clearTimeout(t);t=setTimeout(()=>fn.apply(null,args),ms);}}
 }
 
+function renderRows(rows){
+  const tbody = document.querySelector('#table tbody');
+  tbody.innerHTML='';
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    r.forEach((v,i)=>{
+      const td=document.createElement('td');
+      const text = String(v || '');
+      if(/^https?:\\/\\//i.test(text)){
+        const a=document.createElement('a'); a.href=text; a.textContent=text; a.target='_blank'; td.appendChild(a);
+      }else{
+        td.textContent=text;
+      }
+      td.dataset.label=headers[i] || ('Col ' + (i+1));
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  document.querySelector('#rowCount').textContent = filtered.length;
+  document.querySelector('#colCount').textContent = headers.length;
+}
+
+function toggleSort(idx, th){
+  const thead = document.querySelector('#table thead');
+  [...thead.querySelectorAll('th')].forEach(x=>x.dataset.order='');
+  if(sortCol !== idx){ sortOrder='asc'; }
+  else{ sortOrder = (sortOrder === 'asc') ? 'desc' : 'asc'; }
+  sortCol = idx;
+  th.dataset.order = sortOrder;
+  applyAndRender();
+}
+
+function applyFilters(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const fi = document.getElementById('filterItem').value.trim().toLowerCase();
+  const fp = document.getElementById('filterPart').value.trim().toLowerCase();
+  const qmin = document.getElementById('qtyMin').value;
+  const qmax = document.getElementById('qtyMax').value;
+  const colIdx = {
+    item: headers.findIndex(h => /^item\s*name$/i.test(h)),
+    part: headers.findIndex(h => /^part\s*number$/i.test(h)),
+    qty:  headers.findIndex(h => /^quantity$/i.test(h))
+  };
+  filtered = allRows.filter(r => {
+    // global search
+    let ok = !q || r.some(v => String(v).toLowerCase().includes(q));
+    if(!ok) return false;
+    // item filter
+    if(fi && colIdx.item >= 0){
+      ok = String(r[colIdx.item]||'').toLowerCase().includes(fi);
+      if(!ok) return false;
+    }
+    // part filter
+    if(fp && colIdx.part >= 0){
+      ok = String(r[colIdx.part]||'').toLowerCase().includes(fp);
+      if(!ok) return false;
+    }
+    // quantity range
+    if(colIdx.qty >= 0 && (qmin || qmax)){
+      const n = parseFloat(String(r[colIdx.qty]||'').replace(/,/g,''));
+      if(!isNaN(n)){
+        if(qmin && n < parseFloat(qmin)) return false;
+        if(qmax && n > parseFloat(qmax)) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function applySort(){
+  if(sortCol < 0) return;
+  const idx = sortCol, order = sortOrder;
+  const rows = filtered;
+  rows.sort((a,b)=>{
+    const av = (a[idx]||'').toString();
+    const bv = (b[idx]||'').toString();
+    const an = parseFloat(av.replace(/,/g,''));
+    const bn = parseFloat(bv.replace(/,/g,''));
+    const bothNum = !isNaN(an) && !isNaN(bn);
+    if(bothNum){
+      return order==='asc' ? an - bn : bn - an;
+    }else{
+      return order==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    }
+  });
+}
+
+function paginate(rows){
+  const total = Math.max(1, Math.ceil(rows.length / pageSize));
+  page = Math.min(page, total);
+  const start = (page - 1) * pageSize;
+  const slice = rows.slice(start, start + pageSize);
+  document.getElementById('pageNo').textContent = page;
+  document.getElementById('pageTotal').textContent = total;
+  document.getElementById('prev').disabled = page <= 1;
+  document.getElementById('next').disabled = page >= total;
+  return slice;
+}
+
+function applyAndRender(){
+  applyFilters();
+  applySort();
+  const slice = paginate(filtered);
+  renderRows(slice);
+}
+
+// Events
+document.getElementById('search').addEventListener('input', debounce(applyAndRender, 120));
+document.getElementById('filterItem').addEventListener('input', debounce(applyAndRender, 120));
+document.getElementById('filterPart').addEventListener('input', debounce(applyAndRender, 120));
+document.getElementById('qtyMin').addEventListener('input', debounce(applyAndRender, 120));
+document.getElementById('qtyMax').addEventListener('input', debounce(applyAndRender, 120));
+document.getElementById('prev').addEventListener('click', ()=>{ page=Math.max(1,page-1); applyAndRender(); });
+document.getElementById('next').addEventListener('click', ()=>{ page=page+1; applyAndRender(); });
+document.getElementById('pageSize').addEventListener('change', (e)=>{ pageSize=parseInt(e.target.value,10)||25; page=1; applyAndRender(); });
+
+function debounce(fn, ms){let t;return (...args)=>{clearTimeout(t);t=setTimeout(()=>fn.apply(null,args),ms);}}
+
+// Load
 loadCSV();
 </script>
 </body>
